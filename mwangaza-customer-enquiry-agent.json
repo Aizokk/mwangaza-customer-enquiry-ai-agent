@@ -1,0 +1,533 @@
+{
+  "name": "mwangaza-customer-enquiry-agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mwangaza-enquiry",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        16
+      ],
+      "id": "b7c24926-ac19-4da4-8b74-40d4211986e2",
+      "name": "Webhook",
+      "webhookId": "464db3cd-37e6-463e-a88f-77d646d2e676"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "604e456b-5c08-4c31-a2a5-d34ce0019226",
+              "name": "Full Name",
+              "value": "={{ $json.body.data.fields[0].value }}",
+              "type": "string"
+            },
+            {
+              "id": "6b547060-d0a7-4f46-8343-94130e9979ee",
+              "name": "Email",
+              "value": "={{ $json.body.data.fields[1].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b018fe21-11ff-4ebc-b1e6-cbe818924afe",
+              "name": "Phone",
+              "value": "={{ $json.body.data.fields[2].value }}",
+              "type": "string"
+            },
+            {
+              "id": "12ec9e76-c5c4-41a5-a337-9f2a88cef093",
+              "name": "Location",
+              "value": "={{ $json.body.data.fields[3].value }}",
+              "type": "string"
+            },
+            {
+              "id": "dbff79d7-081f-4de4-a201-ea5d13373876",
+              "name": "Service_Interest",
+              "value": "={{ $json.body.data.fields[4].options.filter(o => $json.body.data.fields[4].value.includes(o.id)).map(o => o.text).join(', ') }}\n",
+              "type": "string"
+            },
+            {
+              "id": "2cc1d949-c3a1-423f-a23b-632c5cbc897a",
+              "name": "Customer Message",
+              "value": "={{ $json.body.data.fields[5].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        16
+      ],
+      "id": "4606c26e-ac27-4fab-9478-bedf2075afd5",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=A new customer enquiry has arrived. Review the customer details below. Use the Search_Company_Information tool when the customer asks about services, coverage, packages or the quotation process. Save the enquiry using the Save_Customer_Enquiry tool when the required details are available. Prepare a concise email response for the customer. Do not invent facts.\n\nCustomer name: {{ $json['Full Name'] }}\nEmail: {{ $json.Email }}\nPhone: {{ $json.Phone }}\nLocation: {{ $json.Location }}\nService: {{ $json.Service_Interest }}\nMessage: {{ $json['Customer Message'] }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful customer support assistant for Mwangaza Solar.\nMANDATORY RULE: You MUST call the Save_Customer_Enquiry tool for EVERY customer submission before writing your final reply. Never skip calling Save_Customer_Enquiry.\n\n- Always check approved facts using the Search_Company_Information tool before answering questions about services, coverage areas, packages, maintenance, or quotations.\n- Never invent prices, coverage areas, or policies. If information is missing or the location is outside Nairobi and listed areas, state that the team will confirm.\n- Save every valid customer enquiry using the Save_Customer_Enquiry tool. Never claim an enquiry was saved if the tool returns an error.\n- Keep email responses polite, clear, and concise.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        576,
+        16
+      ],
+      "id": "7c77acef-f71c-4cd6-b61f-5921e98ed870",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-3-flash-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        240
+      ],
+      "id": "7cc27981-4103-4c1d-9050-f9ada7d2ccaf",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "VI8BN6V6XUuFarGi",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"email_subject\": \"Your Solar Enquiry with Mwangaza\",\n  \"email_body\": \"Hello Isaac, thank you for reaching out...\",\n  \"enquiry_saved\": true,\n  \"short_summary\": \"Customer in Nairobi requesting a solar quotation.\",\n  \"needs_human_follow_up\": false\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        912,
+        272
+      ],
+      "id": "fae55cd0-2a85-447b-ab5f-f9ccae7b83ac",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to save a new customer enquiry after the customer has submitted their contact details and service request. Include the customer's name, email, phone if provided, location, service interest and original message. Do not invent missing details. Return a clear success or failure result.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1dlMjhD5vikKuj9kqQmZzCOVI282rPhAG4tqVUXW-Lng",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Enquiries",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dlMjhD5vikKuj9kqQmZzCOVI282rPhAG4tqVUXW-Lng/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Full name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Full_name', ``, 'string') }}",
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}",
+            "Phone": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone', ``, 'string') }}",
+            "Location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Location', ``, 'string') }}",
+            "Service_Interest": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Service_Interest', ``, 'string') }}",
+            "Customer Message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Customer_Message', ``, 'string') }}",
+            "Agent Summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Agent_Summary', ``, 'string') }}",
+            "Status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+            "Received at": "={{ $now.setZone('Africa/Nairobi').toFormat('yyyy-MM-dd HH:mm:ss') }}\n"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Full name",
+              "displayName": "Full name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service_Interest",
+              "displayName": "Service_Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Message",
+              "displayName": "Customer Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Agent Summary",
+              "displayName": "Agent Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Received at",
+              "displayName": "Received at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        480,
+        304
+      ],
+      "id": "ca25c9bf-be0a-4a2f-85b3-c855c9817b10",
+      "name": "Save_Customer_Enquiry",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HsQXYKRxdJHM1R7m",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool when the customer asks about Mwangaza's services, package features, coverage, maintenance or quotation process. Search the approved company information and return matching facts. Do not guess if no reliable information is found.",
+        "documentId": {
+          "__rl": true,
+          "value": "1dlMjhD5vikKuj9kqQmZzCOVI282rPhAG4tqVUXW-Lng",
+          "mode": "list",
+          "cachedResultName": "Mwangaza Customer Enquiries.",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dlMjhD5vikKuj9kqQmZzCOVI282rPhAG4tqVUXW-Lng/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 422488480,
+          "mode": "list",
+          "cachedResultName": "Mwangaza Company Information.",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dlMjhD5vikKuj9kqQmZzCOVI282rPhAG4tqVUXW-Lng/edit#gid=422488480"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        720,
+        288
+      ],
+      "id": "a753ee16-daa2-415f-a9c3-c9b5c0c4a4e7",
+      "name": "Search_Company_Information",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HsQXYKRxdJHM1R7m",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.Email }}\n",
+        "subject": "={{ $json.output.email_subject }}\n",
+        "emailType": "text",
+        "message": "={{ $json.output.email_body }}\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1264,
+        -160
+      ],
+      "id": "13e1ae0f-1762-46dd-bee0-cd29bfdafb40",
+      "name": "Send a message",
+      "webhookId": "289d1a42-b8b4-4ab5-97db-9146c5509d84",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZQ3mrWXPTzE1Ao4J",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "0e4eb991-d5b9-49e8-9bd1-aee246baf227",
+              "leftValue": "={{ $('Edit Fields').item.json.Email }}\n",
+              "rightValue": "@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1040,
+        -80
+      ],
+      "id": "9b135092-3caf-4876-8b3e-46b46e80f5f1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "202ba9d9-992b-453c-9184-cf0a748150fd",
+              "leftValue": "={{ $json.output.needs_human_follow_up }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1056,
+        144
+      ],
+      "id": "f70cd6c0-c4c4-4aa3-8254-46c9a3f88f19",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "sendTo": "isaactitus100@gmail.com",
+        "subject": "=Human Follow-Up Needed: {{ $('Edit Fields').item.json['Full Name'] }} ({{ $('Edit Fields').item.json.Location }})",
+        "emailType": "text",
+        "message": "=A customer enquiry requires human follow-up:\n\nName: {{ $('Edit Fields').item.json['Full Name'] }}\nPhone: {{ $('Edit Fields').item.json.Phone }}\nEmail: {{ $('Edit Fields').item.json.Email }}\nLocation: {{ $('Edit Fields').item.json.Location }}\nService: {{ $('Edit Fields').item.json.Service_Interest }}\n\nAI Summary: {{ $json.output.short_summary }}\nOriginal Message: {{ $('Edit Fields').item.json['Customer Message'] }}\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        80
+      ],
+      "id": "2879e0b1-456b-4339-a6c9-f138dda06983",
+      "name": "Send a message1",
+      "webhookId": "2dd2ac95-9775-4536-99b4-cc65ea0437fd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZQ3mrWXPTzE1Ao4J",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save_Customer_Enquiry": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search_Company_Information": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9673491c-f603-41b8-8471-edc096829cf8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "92559aec243b989dd8aba9c0d8cdf9cdce14832ba1c7c83e9ae6118d7d144c9e"
+  },
+  "nodeGroups": [],
+  "id": "ZgmvQq4fr7ur10Rj",
+  "tags": []
+}
